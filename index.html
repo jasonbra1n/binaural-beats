@@ -1,224 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deep Sleep Binaural Beats Generator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            max-width: 600px;
-            margin: 2rem auto;
-            padding: 1rem;
-        }
-
-        .container {
-            background-color: #2a2a2a;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-
-        h1 {
-            color: #4CAF50;
-            text-align: center;
-        }
-
-        .controls {
-            margin: 2rem 0;
-        }
-
-        label {
-            display: block;
-            margin: 1rem 0;
-        }
-
-        select, input[type="range"], button {
-            width: 100%;
-            padding: 0.5rem;
-            margin: 0.5rem 0;
-            border-radius: 5px;
-            border: 1px solid #4CAF50;
-            background-color: #333;
-            color: white;
-        }
-
-        button {
-            background-color: #4CAF50;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        #status {
-            text-align: center;
-            margin-top: 1rem;
-            padding: 1rem;
-            background-color: #333;
-            border-radius: 5px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Best Binaural Beats Generator for Deep Sleep</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Deep Sleep Binaural Beats Generator</h1>
-        <div class="controls">
-            <label>
-                Session Type:
-                <select id="sessionType">
-                    <option value="deepSleep">Deep Sleep Cycle</option>
-                    <option value="rem">REM Recovery</option>
-                    <option value="healing">Healing Frequency</option>
-                </select>
-            </label>
+  <div class="container">
+    <h1>Best Binaural Beats Generator</h1>
+    <p class="note">Please use headphones for the binaural effect.</p>
 
-            <label>
-                Duration (minutes):
-                <input type="range" id="duration" min="15" max="120" value="45">
-                <span id="durationValue">45</span> mins
-            </label>
-
-            <button id="controlButton">Start Session</button>
-        </div>
-        <div id="status">Ready</div>
+    <!-- Mode Selection -->
+    <div class="mode-selection">
+      <label><input type="radio" name="mode" value="sleep" checked> Sleep Cycle</label>
+      <label><input type="radio" name="mode" value="tone"> Tone Generator</label>
     </div>
 
-    <script>
-        let audioContext;
-        let leftOscillator, rightOscillator;
-        let isPlaying = false;
-        let startTime;
-        let sessionTimeout;
+    <!-- Sleep Cycle Options -->
+    <div id="sleep-options">
+      <label for="total-time">Total Time (minutes):</label>
+      <input type="number" id="total-time" min="60" value="480" placeholder="e.g., 480 for 8 hours">
+    </div>
 
-        const frequencies = {
-            deepSleep: { start: 100, end: 60 },
-            rem: { start: 90, end: 70 },
-            healing: { start: 528, end: 528 }
-        };
+    <!-- Tone Generator Options -->
+    <div id="tone-options" style="display: none;">
+      <label for="state">Select Brainwave State:</label>
+      <select id="state">
+        <option value="2">Delta (2 Hz) - Deep Sleep</option>
+        <option value="6">Theta (6 Hz) - REM/Light Sleep</option>
+        <option value="10">Alpha (10 Hz) - Relaxation</option>
+        <option value="20">Beta (20 Hz) - Focus</option>
+        <option value="40">Gamma (40 Hz) - High Cognition</option>
+        <option value="custom">Custom Frequency</option>
+        <option value="432">Healing (432 Hz Carrier, 2 Hz Delta)</option>
+      </select>
+      <div id="custom-frequency" style="display: none;">
+        <label for="custom-hz">Custom Binaural Beat (Hz):</label>
+        <input type="number" id="custom-hz" min="0.5" max="40" value="10" step="0.1">
+      </div>
+    </div>
 
-        document.getElementById('duration').addEventListener('input', function(e) {
-            document.getElementById('durationValue').textContent = e.target.value;
-        });
+    <!-- Volume Control -->
+    <div class="volume-control">
+      <label for="volume">Volume:</label>
+      <input type="range" id="volume" min="0" max="100" value="50">
+    </div>
 
-        document.getElementById('controlButton').addEventListener('click', toggleSession);
+    <!-- Playback Controls -->
+    <div class="controls">
+      <button id="play">Play</button>
+      <button id="stop">Stop</button>
+    </div>
+  </div>
 
-        function toggleSession() {
-            if (isPlaying) {
-                stopSession();
-            } else {
-                startSession();
-            }
-        }
-
-        function startSession() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
-
-            const sessionType = document.getElementById('sessionType').value;
-            const duration = document.getElementById('duration').value * 60;
-            const { start, end } = frequencies[sessionType];
-
-            // Create oscillators
-            leftOscillator = audioContext.createOscillator();
-            rightOscillator = audioContext.createOscillator();
-
-            // Create splitter for stereo output
-            const splitter = audioContext.createChannelSplitter(2);
-            
-            // Connect nodes
-            leftOscillator.connect(splitter);
-            rightOscillator.connect(splitter);
-            splitter.connect(audioContext.destination, 0, 0); // Left channel
-            splitter.connect(audioContext.destination, 1, 1); // Right channel
-
-            // Set initial frequencies
-            leftOscillator.frequency.value = start;
-            rightOscillator.frequency.value = sessionType === 'healing' ? start : start - 0.1;
-
-            // Configure oscillator types
-            leftOscillator.type = 'sine';
-            rightOscillator.type = 'sine';
-
-            // Start oscillators
-            leftOscillator.start();
-            rightOscillator.start();
-
-            // Schedule frequency changes
-            if (sessionType !== 'healing') {
-                const startFrequency = start;
-                const endFrequency = end;
-                const rampTime = duration - 1800; // Last 30 minutes for REM rise
-
-                leftOscillator.frequency.linearRampToValueAtTime(
-                    endFrequency, 
-                    audioContext.currentTime + duration
-                );
-
-                rightOscillator.frequency.linearRampToValueAtTime(
-                    endFrequency - 0.1, 
-                    audioContext.currentTime + duration
-                );
-
-                if (sessionType === 'rem') {
-                    // Schedule REM frequency rise for last 30 minutes
-                    const remStartTime = duration - 1800;
-                    leftOscillator.frequency.setValueAtTime(endFrequency, audioContext.currentTime + remStartTime);
-                    leftOscillator.frequency.linearRampToValueAtTime(
-                        startFrequency, 
-                        audioContext.currentTime + duration
-                    );
-
-                    rightOscillator.frequency.setValueAtTime(endFrequency - 0.1, audioContext.currentTime + remStartTime);
-                    rightOscillator.frequency.linearRampToValueAtTime(
-                        startFrequency - 0.1, 
-                        audioContext.currentTime + duration
-                    );
-                }
-            }
-
-            // Update UI
-            isPlaying = true;
-            startTime = Date.now();
-            document.getElementById('controlButton').textContent = 'Stop Session';
-            updateStatus(duration);
-        }
-
-        function stopSession() {
-            if (leftOscillator) {
-                leftOscillator.stop();
-                rightOscillator.stop();
-                leftOscillator = null;
-                rightOscillator = null;
-            }
-            clearTimeout(sessionTimeout);
-            isPlaying = false;
-            document.getElementById('controlButton').textContent = 'Start Session';
-            document.getElementById('status').textContent = 'Session Stopped';
-        }
-
-        function updateStatus(duration) {
-            if (!isPlaying) return;
-
-            const elapsed = Math.floor((Date.now() - startTime) / 1000);
-            const remaining = duration - elapsed;
-
-            if (remaining > 0) {
-                const minutes = Math.floor(remaining / 60);
-                const seconds = remaining % 60;
-                document.getElementById('status').textContent = 
-                    `Session Active - Time Remaining: ${minutes}m ${seconds}s`;
-                sessionTimeout = setTimeout(() => updateStatus(duration), 1000);
-            } else {
-                document.getElementById('status').textContent = 'Session Completed';
-                stopSession();
-            }
-        }
-    </script>
+  <script src="script.js"></script>
 </body>
 </html>
