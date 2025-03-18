@@ -12,10 +12,11 @@ const totalTimeInput = document.getElementById('total-time');
 const transitionTimeInput = document.getElementById('transition-time');
 const riseTimeInput = document.getElementById('rise-time');
 const timelineSlider = document.getElementById('timeline');
+const panningCheckbox = document.getElementById('panning');
 const waveCanvas = document.getElementById('wave-canvas');
 const ctx = waveCanvas.getContext('2d');
 
-let leftOsc, rightOsc, masterGain, startTime, totalDuration, intervalId, beatFrequencies = [];
+let leftOsc, rightOsc, leftGain, rightGain, lfoLeft, lfoRight, masterGain, startTime, totalDuration, intervalId, beatFrequencies = [];
 
 // Toggle mode options
 modeRadios.forEach(radio => {
@@ -32,24 +33,29 @@ secondCarrierInput.addEventListener('input', updateAudio);
 volumeSlider.addEventListener('input', updateVolume);
 stateSelect.addEventListener('change', updateAudio);
 customFrequencyInput.addEventListener('input', updateAudio);
+panningCheckbox.addEventListener('change', updateAudio);
 
 // Play audio
 playButton.addEventListener('click', async () => {
   await Tone.start();
   const mode = document.querySelector('input[name="mode"]:checked').value;
-  const carrier = parseFloat(carrierFrequencyInput.value);
+  const carrier = parseFloat(carrierFrequencyInput.value) || 200;
   const volume = volumeSlider.value / 100;
 
   if (leftOsc) {
     leftOsc.stop();
     rightOsc.stop();
+    lfoLeft?.stop();
+    lfoRight?.stop();
   }
 
   masterGain = new Tone.Gain(volume).toDestination();
+  leftGain = new Tone.Gain(1);
+  rightGain = new Tone.Gain(1);
 
   if (mode === 'sleep') {
     totalDuration = parseInt(totalTimeInput.value) * 60;
-    const secondCarrier = parseFloat(secondCarrierInput.value);
+    const secondCarrier = parseFloat(secondCarrierInput.value) || 150;
     const transitionTime = parseInt(transitionTimeInput.value) * 60;
     const riseTime = parseInt(riseTimeInput.value) * 60;
     beatFrequencies = [2]; // Delta for sleep
@@ -59,8 +65,13 @@ playButton.addEventListener('click', async () => {
 
     const leftPanner = new Tone.Panner(-1).connect(masterGain);
     const rightPanner = new Tone.Panner(1).connect(masterGain);
-    leftOsc.connect(leftPanner);
-    rightOsc.connect(rightPanner);
+    leftOsc.connect(leftGain).connect(leftPanner);
+    rightOsc.connect(rightGain).connect(rightPanner);
+
+    // Setup LFOs for panning
+    lfoLeft = new Tone.LFO(beatFrequencies[0], 0.5, 1).start();
+    lfoRight = new Tone.LFO(beatFrequencies[0], 0.5, 1).start();
+    lfoRight.phase = 180;
 
     leftOsc.start();
     rightOsc.start();
@@ -71,22 +82,29 @@ playButton.addEventListener('click', async () => {
     visualizeSleepCycle();
   } else {
     const selectedStates = Array.from(stateSelect.selectedOptions).map(option => parseFloat(option.value));
-    const customFrequency = parseFloat(customFrequencyInput.value);
-    beatFrequencies = selectedStates.concat(customFrequency);
+    const customFrequency = parseFloat(customFrequencyInput.value) || 10;
+    beatFrequencies = selectedStates.length ? selectedStates : [customFrequency];
 
     leftOsc = new Tone.Oscillator(carrier, 'sine');
-    rightOsc = new Tone.Oscillator(carrier + Math.max(...beatFrequencies), 'sine'); // Simplified for visualization
+    rightOsc = new Tone.Oscillator(carrier + Math.max(...beatFrequencies), 'sine');
 
     const leftPanner = new Tone.Panner(-1).connect(masterGain);
     const rightPanner = new Tone.Panner(1).connect(masterGain);
-    leftOsc.connect(leftPanner);
-    rightOsc.connect(rightPanner);
+    leftOsc.connect(leftGain).connect(leftPanner);
+    rightOsc.connect(rightGain).connect(rightPanner);
+
+    // Setup LFOs for panning
+    lfoLeft = new Tone.LFO(Math.max(...beatFrequencies), 0.5, 1).start();
+    lfoRight = new Tone.LFO(Math.max(...beatFrequencies), 0.5, 1).start();
+    lfoRight.phase = 180;
 
     leftOsc.start();
     rightOsc.start();
 
     visualizeBeatFrequencies(beatFrequencies);
   }
+
+  updateAudio();
 });
 
 // Stop audio
@@ -96,8 +114,12 @@ stopButton.addEventListener('click', () => {
     setTimeout(() => {
       leftOsc.stop();
       rightOsc.stop();
+      lfoLeft?.stop();
+      lfoRight?.stop();
       leftOsc = null;
       rightOsc = null;
+      lfoLeft = null;
+      lfoRight = null;
       clearInterval(intervalId);
       timelineSlider.value = 0;
     }, 2000);
@@ -108,7 +130,8 @@ stopButton.addEventListener('click', () => {
 function updateAudio() {
   if (leftOsc && rightOsc) {
     const mode = document.querySelector('input[name="mode"]:checked').value;
-    const carrier = parseFloat(carrierFrequencyInput.value);
+    const carrier = parseFloat(carrierFrequencyInput.value) || 200;
+    const panningEnabled = panningCheckbox.checked;
     let beatFrequency;
 
     if (mode === 'sleep') {
@@ -116,17 +139,43 @@ function updateAudio() {
       const transitionTime = parseInt(transitionTimeInput.value) * 60;
       const riseTime = parseInt(riseTimeInput.value) * 60;
       const totalDuration = parseInt(totalTimeInput.value) * 60;
-      const secondCarrier = parseFloat(secondCarrierInput.value);
+      const secondCarrier = parseFloat(secondCarrierInput.value) || 150;
       beatFrequency = 2; // Delta
-      leftOsc.frequency.value = getCurrentCarrier(elapsed, transitionTime, riseTime, totalDuration, carrier, secondCarrier);
+      const currentCarrier = getCurrentCarrier(elapsed, transitionTime, riseTime, totalDuration, carrier, secondCarrier);
+      leftOsc.frequency.value = currentCarrier;
+      rightOsc.frequency.value = currentCarrier + beatFrequency;
+
+      if (panningEnabled) {
+        lfoLeft.frequency.value = beatFrequency;
+        lfoRight.frequency.value = beatFrequency;
+        lfoLeft.connect(leftGain.gain);
+        lfoRight.connect(rightGain.gain);
+      } else {
+        lfoLeft.disconnect();
+        lfoRight.disconnect();
+        leftGain.gain.value = 1;
+        rightGain.gain.value = 1;
+      }
     } else {
       const selectedStates = Array.from(stateSelect.selectedOptions).map(option => parseFloat(option.value));
-      const customFrequency = parseFloat(customFrequencyInput.value);
-      beatFrequencies = selectedStates.concat(customFrequency);
-      beatFrequency = Math.max(...beatFrequencies); // Simplified for now
+      const customFrequency = parseFloat(customFrequencyInput.value) || 10;
+      beatFrequencies = selectedStates.length ? selectedStates : [customFrequency];
+      beatFrequency = Math.max(...beatFrequencies); // Use max for simplicity
       leftOsc.frequency.value = carrier;
+      rightOsc.frequency.value = carrier + beatFrequency;
+
+      if (panningEnabled) {
+        lfoLeft.frequency.value = beatFrequency;
+        lfoRight.frequency.value = beatFrequency;
+        lfoLeft.connect(leftGain.gain);
+        lfoRight.connect(rightGain.gain);
+      } else {
+        lfoLeft.disconnect();
+        lfoRight.disconnect();
+        leftGain.gain.value = 1;
+        rightGain.gain.value = 1;
+      }
     }
-    rightOsc.frequency.value = leftOsc.frequency.value + beatFrequency;
   }
 }
 
@@ -214,7 +263,7 @@ function visualizeSleepCycle() {
     ctx.beginPath();
     for (let x = 0; x < waveCanvas.width; x++) {
       const time = (x / waveCanvas.width) * totalDuration;
-      const carrier = getCurrentCarrier(time, parseInt(transitionTimeInput.value) * 60, parseInt(riseTimeInput.value) * 60, totalDuration, parseFloat(carrierFrequencyInput.value), parseFloat(secondCarrierInput.value));
+      const carrier = getCurrentCarrier(time, parseInt(transitionTimeInput.value) * 60, parseInt(riseTimeInput.value) * 60, totalDuration, parseFloat(carrierFrequencyInput.value) || 200, parseFloat(secondCarrierInput.value) || 150);
       const y = waveCanvas.height / 2 + Math.sin(x * 0.01 * beatFrequency) * (carrier / 1000) * 50;
       ctx.lineTo(x, y);
     }
@@ -222,7 +271,7 @@ function visualizeSleepCycle() {
     ctx.stroke();
 
     // Current position indicator
-    const progress = (elapsed / totalDuration) * waveCanvas.width;
+    const progress = Math.min((elapsed / totalDuration) * waveCanvas.width, waveCanvas.width);
     ctx.beginPath();
     ctx.moveTo(progress, 0);
     ctx.lineTo(progress, waveCanvas.height);
