@@ -41,16 +41,15 @@
 
     <!-- Tone Generator Options -->
     <div id="tone-options" style="display: none;">
-      <label for="state">Select Brainwave State:</label>
-      <select id="state">
+      <label for="state">Select Brainwave States (Multiple Allowed):</label>
+      <select id="state" multiple>
         <option value="2">Delta (2 Hz) - Deep Sleep</option>
         <option value="6">Theta (6 Hz) - REM/Light Sleep</option>
         <option value="10">Alpha (10 Hz) - Relaxation</option>
         <option value="20">Beta (20 Hz) - Focus</option>
         <option value="40">Gamma (40 Hz) - High Cognition</option>
-        <option value="custom">Custom Frequency</option>
       </select>
-      <div id="custom-frequency" style="display: none;">
+      <div id="custom-frequency">
         <label for="custom-hz">Custom Binaural Beat (Hz):</label>
         <input type="number" id="custom-hz" min="0.5" max="40" value="10" step="0.1">
       </div>
