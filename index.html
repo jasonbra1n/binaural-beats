@@ -18,17 +18,25 @@
       <label><input type="radio" name="mode" value="tone"> Tone Generator</label>
     </div>
 
-    <!-- Carrier Frequency Input -->
+    <!-- Carrier Frequency -->
     <div class="carrier-frequency">
-      <label for="carrier-frequency">Carrier Frequency (Hz): </label>
+      <label for="carrier-frequency">Starting Carrier Frequency (Hz): </label>
       <input type="number" id="carrier-frequency" min="50" max="1000" value="200" step="1">
-      <span class="note">(Recommended: 100-1000 Hz, experiment with lower values if desired)</span>
     </div>
 
     <!-- Sleep Cycle Options -->
     <div id="sleep-options">
+      <label for="second-carrier">Second Carrier Frequency (Hz):</label>
+      <input type="number" id="second-carrier" min="50" max="1000" value="150" step="1">
       <label for="total-time">Total Time (minutes):</label>
-      <input type="number" id="total-time" min="60" value="480" placeholder="e.g., 480 for 8 hours">
+      <input type="number" id="total-time" min="60" value="480">
+      <label for="transition-time">Transition to Second Carrier after (minutes):</label>
+      <input type="number" id="transition-time" min="1" value="30">
+      <label for="rise-time">Rise back to Starting Carrier before end (minutes):</label>
+      <input type="number" id="rise-time" min="1" value="30">
+      <div class="timeline">
+        <input type="range" id="timeline" min="0" max="100" value="0" step="1">
+      </div>
     </div>
 
     <!-- Tone Generator Options -->
@@ -41,7 +49,6 @@
         <option value="20">Beta (20 Hz) - Focus</option>
         <option value="40">Gamma (40 Hz) - High Cognition</option>
         <option value="custom">Custom Frequency</option>
-        <option value="432">Healing (432 Hz Carrier, 2 Hz Delta)</option>
       </select>
       <div id="custom-frequency" style="display: none;">
         <label for="custom-hz">Custom Binaural Beat (Hz):</label>
@@ -59,6 +66,11 @@
     <div class="controls">
       <button id="play">Play</button>
       <button id="stop">Stop</button>
+    </div>
+
+    <!-- Visualization -->
+    <div class="visualization">
+      <canvas id="wave-canvas" width="600" height="200"></canvas>
     </div>
   </div>
 
