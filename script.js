@@ -23,6 +23,17 @@ stateSelect.addEventListener('change', () => {
   customFrequencyDiv.style.display = stateSelect.value === 'custom' ? 'block' : 'none';
 });
 
+// Get and validate carrier frequency
+function getCarrierFrequency() {
+  const input = document.getElementById('carrier-frequency');
+  let freq = parseFloat(input.value);
+  if (isNaN(freq) || freq < 50 || freq > 1000) {
+    freq = 200; // Default
+    input.value = 200;
+  }
+  return freq;
+}
+
 // Play audio
 playButton.addEventListener('click', async () => {
   await Tone.start(); // Resume audio context on user interaction
@@ -40,7 +51,7 @@ playButton.addEventListener('click', async () => {
 
   if (mode === 'sleep') {
     const totalTime = parseInt(document.getElementById('total-time').value) * 60; // Seconds
-    const carrier = 200;
+    const carrier = getCarrierFrequency();
     const alphaBeat = 10; // Alpha: 10 Hz
     const deltaBeat = 2;  // Delta: 2 Hz
 
@@ -74,15 +85,17 @@ playButton.addEventListener('click', async () => {
   } else {
     // Tone generator mode
     const state = stateSelect.value;
-    let carrier = 200;
+    let carrier;
     let beatFrequency;
 
     if (state === '432') {
       carrier = 432; // Healing frequency carrier
       beatFrequency = 2; // Delta beat
     } else if (state === 'custom') {
+      carrier = getCarrierFrequency();
       beatFrequency = parseFloat(document.getElementById('custom-hz').value);
     } else {
+      carrier = getCarrierFrequency();
       beatFrequency = parseFloat(state);
     }
 
