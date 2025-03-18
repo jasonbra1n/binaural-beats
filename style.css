@@ -74,6 +74,10 @@ button:hover {
   padding: 10px;
 }
 
+.panning-control {
+  margin: 20px 0;
+}
+
 @media (max-width: 768px) {
   .container {
     padding: 10px;
