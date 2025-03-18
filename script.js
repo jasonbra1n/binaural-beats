@@ -2,7 +2,7 @@ const modeRadios = document.querySelectorAll('input[name="mode"]');
 const sleepOptions = document.getElementById('sleep-options');
 const toneOptions = document.getElementById('tone-options');
 const stateSelect = document.getElementById('state');
-const customFrequencyDiv = document.getElementById('custom-frequency');
+const customFrequencyInput = document.getElementById('custom-hz');
 const volumeSlider = document.getElementById('volume');
 const playButton = document.getElementById('play');
 const stopButton = document.getElementById('stop');
@@ -15,7 +15,7 @@ const timelineSlider = document.getElementById('timeline');
 const waveCanvas = document.getElementById('wave-canvas');
 const ctx = waveCanvas.getContext('2d');
 
-let leftOsc, rightOsc, masterGain, startTime, totalDuration, intervalId;
+let leftOsc, rightOsc, masterGain, startTime, totalDuration, intervalId, beatFrequencies = [];
 
 // Toggle mode options
 modeRadios.forEach(radio => {
@@ -26,17 +26,12 @@ modeRadios.forEach(radio => {
   });
 });
 
-// Show/hide custom frequency input
-stateSelect.addEventListener('change', () => {
-  customFrequencyDiv.style.display = stateSelect.value === 'custom' ? 'block' : 'none';
-  updateAudio();
-});
-
 // Real-time updates
 carrierFrequencyInput.addEventListener('input', updateAudio);
 secondCarrierInput.addEventListener('input', updateAudio);
 volumeSlider.addEventListener('input', updateVolume);
-document.getElementById('custom-hz').addEventListener('input', updateAudio);
+stateSelect.addEventListener('change', updateAudio);
+customFrequencyInput.addEventListener('input', updateAudio);
 
 // Play audio
 playButton.addEventListener('click', async () => {
@@ -57,10 +52,10 @@ playButton.addEventListener('click', async () => {
     const secondCarrier = parseFloat(secondCarrierInput.value);
     const transitionTime = parseInt(transitionTimeInput.value) * 60;
     const riseTime = parseInt(riseTimeInput.value) * 60;
-    const beatFrequency = 2; // Delta for sleep
+    beatFrequencies = [2]; // Delta for sleep
 
     leftOsc = new Tone.Oscillator(carrier, 'sine');
-    rightOsc = new Tone.Oscillator(carrier + beatFrequency, 'sine');
+    rightOsc = new Tone.Oscillator(carrier + beatFrequencies[0], 'sine');
 
     const leftPanner = new Tone.Panner(-1).connect(masterGain);
     const rightPanner = new Tone.Panner(1).connect(masterGain);
@@ -70,16 +65,17 @@ playButton.addEventListener('click', async () => {
     leftOsc.start();
     rightOsc.start();
 
-    scheduleSleepCycle(transitionTime, riseTime, totalDuration, carrier, secondCarrier, beatFrequency);
+    scheduleSleepCycle(transitionTime, riseTime, totalDuration, carrier, secondCarrier);
     startTime = Tone.now();
     updateTimeline();
     visualizeSleepCycle();
   } else {
-    const state = stateSelect.value;
-    let beatFrequency = state === 'custom' ? parseFloat(document.getElementById('custom-hz').value) : parseFloat(state);
+    const selectedStates = Array.from(stateSelect.selectedOptions).map(option => parseFloat(option.value));
+    const customFrequency = parseFloat(customFrequencyInput.value);
+    beatFrequencies = selectedStates.concat(customFrequency);
 
     leftOsc = new Tone.Oscillator(carrier, 'sine');
-    rightOsc = new Tone.Oscillator(carrier + beatFrequency, 'sine');
+    rightOsc = new Tone.Oscillator(carrier + Math.max(...beatFrequencies), 'sine'); // Simplified for visualization
 
     const leftPanner = new Tone.Panner(-1).connect(masterGain);
     const rightPanner = new Tone.Panner(1).connect(masterGain);
@@ -89,7 +85,7 @@ playButton.addEventListener('click', async () => {
     leftOsc.start();
     rightOsc.start();
 
-    visualizeBeatFrequency(beatFrequency);
+    visualizeBeatFrequencies(beatFrequencies);
   }
 });
 
@@ -124,8 +120,10 @@ function updateAudio() {
       beatFrequency = 2; // Delta
       leftOsc.frequency.value = getCurrentCarrier(elapsed, transitionTime, riseTime, totalDuration, carrier, secondCarrier);
     } else {
-      const state = stateSelect.value;
-      beatFrequency = state === 'custom' ? parseFloat(document.getElementById('custom-hz').value) : parseFloat(state);
+      const selectedStates = Array.from(stateSelect.selectedOptions).map(option => parseFloat(option.value));
+      const customFrequency = parseFloat(customFrequencyInput.value);
+      beatFrequencies = selectedStates.concat(customFrequency);
+      beatFrequency = Math.max(...beatFrequencies); // Simplified for now
       leftOsc.frequency.value = carrier;
     }
     rightOsc.frequency.value = leftOsc.frequency.value + beatFrequency;
@@ -139,16 +137,16 @@ function updateVolume() {
 }
 
 // Schedule sleep cycle carrier changes
-function scheduleSleepCycle(transitionTime, riseTime, totalDuration, startCarrier, secondCarrier, beatFrequency) {
+function scheduleSleepCycle(transitionTime, riseTime, totalDuration, startCarrier, secondCarrier) {
   leftOsc.frequency.setValueAtTime(startCarrier, Tone.now());
   leftOsc.frequency.linearRampTo(secondCarrier, transitionTime, Tone.now());
   leftOsc.frequency.setValueAtTime(secondCarrier, Tone.now() + totalDuration - riseTime);
   leftOsc.frequency.linearRampTo(startCarrier, riseTime, Tone.now() + totalDuration - riseTime);
 
-  rightOsc.frequency.setValueAtTime(startCarrier + beatFrequency, Tone.now());
-  rightOsc.frequency.linearRampTo(secondCarrier + beatFrequency, transitionTime, Tone.now());
-  rightOsc.frequency.setValueAtTime(secondCarrier + beatFrequency, Tone.now() + totalDuration - riseTime);
-  rightOsc.frequency.linearRampTo(startCarrier + beatFrequency, riseTime, Tone.now() + totalDuration - riseTime);
+  rightOsc.frequency.setValueAtTime(startCarrier + 2, Tone.now());
+  rightOsc.frequency.linearRampTo(secondCarrier + 2, transitionTime, Tone.now());
+  rightOsc.frequency.setValueAtTime(secondCarrier + 2, Tone.now() + totalDuration - riseTime);
+  rightOsc.frequency.linearRampTo(startCarrier + 2, riseTime, Tone.now() + totalDuration - riseTime);
 }
 
 // Update timeline
@@ -185,8 +183,8 @@ function getCurrentCarrier(elapsed, transitionTime, riseTime, totalDuration, sta
   }
 }
 
-// Visualize constant beat frequency
-function visualizeBeatFrequency(beatFrequency) {
+// Visualize multiple beat frequencies
+function visualizeBeatFrequencies(beatFrequencies) {
   let phase = 0;
   function draw() {
     requestAnimationFrame(draw);
@@ -194,7 +192,10 @@ function visualizeBeatFrequency(beatFrequency) {
     ctx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
     ctx.beginPath();
     for (let x = 0; x < waveCanvas.width; x++) {
-      const y = waveCanvas.height / 2 + Math.sin(x * 0.01 * beatFrequency + phase) * 50;
+      let y = waveCanvas.height / 2;
+      beatFrequencies.forEach(freq => {
+        y += Math.sin(x * 0.01 * freq + phase) * 50 / beatFrequencies.length;
+      });
       ctx.lineTo(x, y);
     }
     ctx.strokeStyle = '#ffffff';
