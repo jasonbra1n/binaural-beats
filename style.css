@@ -22,7 +22,7 @@ h1 {
   margin-bottom: 20px;
 }
 
-.mode-selection, .volume-control, .controls {
+.mode-selection, .carrier-frequency, .volume-control, .controls {
   margin: 20px 0;
 }
 
@@ -33,6 +33,15 @@ label {
 input[type="number"], select {
   padding: 5px;
   font-size: 1em;
+}
+
+.carrier-frequency input {
+  width: 80px;
+}
+
+.carrier-frequency .note {
+  font-size: 0.8em;
+  color: #aaa;
 }
 
 button {
