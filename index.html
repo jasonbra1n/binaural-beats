@@ -18,6 +18,13 @@
       <label><input type="radio" name="mode" value="tone"> Tone Generator</label>
     </div>
 
+    <!-- Carrier Frequency Input -->
+    <div class="carrier-frequency">
+      <label for="carrier-frequency">Carrier Frequency (Hz): </label>
+      <input type="number" id="carrier-frequency" min="50" max="1000" value="200" step="1">
+      <span class="note">(Recommended: 100-1000 Hz, experiment with lower values if desired)</span>
+    </div>
+
     <!-- Sleep Cycle Options -->
     <div id="sleep-options">
       <label for="total-time">Total Time (minutes):</label>
