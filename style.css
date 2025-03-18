@@ -1,25 +1,32 @@
 body {
   background-color: #1a1a1a;
   color: #ffffff;
-  font-family: Arial, sans-serif;
+  font-family: 'Arial', sans-serif;
   margin: 0;
   padding: 20px;
+  line-height: 1.6;
 }
 
 .container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   text-align: center;
+  background: #2a2a2a;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 h1 {
-  font-size: 2em;
+  font-size: 2.5em;
   margin-bottom: 10px;
+  color: #ffffff;
 }
 
 .note {
   font-style: italic;
   margin-bottom: 20px;
+  color: #aaaaaa;
 }
 
 .mode-selection, .carrier-frequency, .volume-control, .controls, .timeline {
@@ -27,22 +34,29 @@ h1 {
 }
 
 label {
+  font-weight: bold;
   margin-right: 15px;
 }
 
 input[type="number"], select, input[type="range"] {
-  padding: 5px;
+  padding: 8px;
   font-size: 1em;
+  border-radius: 5px;
+  border: 1px solid #444;
+  background: #333;
+  color: #fff;
 }
 
 button {
-  padding: 10px 20px;
-  font-size: 1em;
+  padding: 12px 24px;
+  font-size: 1.2em;
   background-color: #4a4a4a;
   color: #fff;
   border: none;
+  border-radius: 5px;
   cursor: pointer;
   margin: 5px;
+  transition: background 0.3s;
 }
 
 button:hover {
@@ -55,4 +69,20 @@ button:hover {
 
 .visualization {
   margin-top: 20px;
+  background: #222;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+  button {
+    width: 100%;
+    font-size: 1em;
+  }
+  input[type="number"], select {
+    width: 100%;
+  }
 }
