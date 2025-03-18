@@ -22,7 +22,7 @@ h1 {
   margin-bottom: 20px;
 }
 
-.mode-selection, .carrier-frequency, .volume-control, .controls {
+.mode-selection, .carrier-frequency, .volume-control, .controls, .timeline {
   margin: 20px 0;
 }
 
@@ -30,18 +30,9 @@ label {
   margin-right: 15px;
 }
 
-input[type="number"], select {
+input[type="number"], select, input[type="range"] {
   padding: 5px;
   font-size: 1em;
-}
-
-.carrier-frequency input {
-  width: 80px;
-}
-
-.carrier-frequency .note {
-  font-size: 0.8em;
-  color: #aaa;
 }
 
 button {
@@ -58,11 +49,10 @@ button:hover {
   background-color: #666;
 }
 
-@media (max-width: 480px) {
-  .container {
-    padding: 10px;
-  }
-  button {
-    width: 100%;
-  }
+.timeline input[type="range"] {
+  width: 100%;
+}
+
+.visualization {
+  margin-top: 20px;
 }
